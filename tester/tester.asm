@@ -33,11 +33,7 @@ ORG 256
 
  PrintLN 'PentiumPro instruction set tester'
 
- CALL setIllegalHandler
- CALL setTimerHandler
-
-endless:
- ;JMP    endless
+ CALL   setIllegalHandler
 
  Print  'CMOVB AX,BX - '
  STC
@@ -45,8 +41,6 @@ endless:
  JNE    bug
  CLC
  TCMOVB AX,BX
- JE     bug
- TEST  [fatal],-1
  JE     bug
  PrintLN 'Ok'
  JMP    next
@@ -69,46 +63,18 @@ setIllegalHandler:
 
  XOR    AX,AX
  MOV    DS,AX
-
  MOV    AX,CS
- MOV    WORD [6 * 4 + 0],AX
- MOV    WORD [6 * 4 + 2],illegalHandler
+ MOV    WORD [6 * 4 + 0],illegalHandler
+ MOV    WORD [6 * 4 + 2],AX
 
  POP    DS
  RET
 ;-------------------------------------------------------
 illegalHandler:
 
- MOV [fatal],-1
+ PrintLN '#Illegal'
+ MOV    AX,4c00H
+ INT    21H
+
  IRET
 ;-------------------------------------------------------
-setTimerHandler:
- 
- PUSH   DS
-
- XOR    AX,AX
- MOV    DS,AX
-
- MOV    AX,WORD [8 * 4 + 0]
- MOV    [CS:timerSaveOffs],AX
- MOV    AX,WORD [8 * 4 + 2]
- MOV    [CS:timerSaveSeg],AX
-
- CLI
- MOV    WORD [8 * 4 + 0],timerHandler
- MOV    AX,CS
- MOV    WORD [8 * 4 + 2],AX
- STI
-
- POP    DS
- RET
-;-------------------------------------------------------
-timerHandler:
-
- PUSH   DS
- PUSH   0b800H
- POP    DS
- INC    BYTE [0]
- POP    DS
-
- JMP    DWORD [CS:timerSaveOffs]
