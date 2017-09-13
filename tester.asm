@@ -8,9 +8,9 @@ MACRO Print string
  CALL @F
  DB string,'$'
 @@:
- POP	DX
- MOV	AH,9
- INT	21H
+ POP    DX
+ MOV    AH,9
+ INT    21H
 }
 ;-------------------------------------------------------
 MACRO PrintLN string
@@ -18,51 +18,52 @@ MACRO PrintLN string
  CALL @F
  DB string,10,13,'$'
 @@:
- POP	DX
- MOV	AH,9
- INT	21H
+ POP    DX
+ MOV    AH,9
+ INT    21H
 }
 ;-------------------------------------------------------
 ORG 256
 
  PrintLN 'PentiumPro instruction set tester'
 
- XOR	AX,AX	      ; set up illegal handler
- MOV	DS,AX
- MOV	SI,[6 * 4 + 0]
- MOV	DI,[6 * 4 + 2]
- MOV	AX,CS
- MOV	WORD [6 * 4 + 0],illegal
- MOV	WORD [6 * 4 + 2],AX
- MOV	DS,AX
- MOV	ES,AX
- MOV	[iloffset],SI
- MOV	[ilsegment],DI
+ XOR    AX,AX         ; set up illegal handler
+ MOV    DS,AX
+ MOV    SI,[6 * 4 + 0]
+ MOV    DI,[6 * 4 + 2]
+ MOV    AX,CS
+ MOV    WORD [6 * 4 + 0],illegal
+ MOV    WORD [6 * 4 + 2],AX
+ MOV    DS,AX
+ MOV    ES,AX
+ MOV    [iloffset],SI
+ MOV    [ilsegment],DI
 
- MOV	[stdstack],SP
- MOV	[pointer],tab
+ MOV    [stdstack],SP
+ MOV    [pointer],tab
 
 next:
- MOV	BX,[pointer]  ; pick next table item
- ADD	[pointer],2
- TEST	WORD [BX],-1
- JZ	quit
+ MOV    BX,[pointer]  ; pick next table item
+ ADD    [pointer],2
+ TEST   WORD [BX],-1
+ JZ     quit
 
- MOV	AH,9	      ; print title
- LEA	DX,[txt_pre]
- INT	21H
- MOV	DX,[BX]
- INT	21H
- MOV	AH,9
- LEA	DX,[txt_wait]
- INT	21H
+ MOV    AH,9          ; print title
+ LEA    DX,[txt_pre]
+ INT    21H
+ MOV    DX,[BX]
+ INT    21H
+ MOV    AH,9
+ LEA    DX,[txt_wait]
+ INT    21H
 
- MOV	DI,[BX]       ; skip title
- MOV	AL,'$'
+ MOV    DI,[BX]       ; skip title
+ MOV    AL,'$'
  REPNZ SCASB
 
- MOV	[jump],DI     ; perform test
- JMP	[jump]
+ MOV    [jump],DI     ; perform test
+ CALL   [jump]
+ JZ     fail
 
 okay:
  MOV   AH,9
@@ -80,121 +81,121 @@ fail:
  JMP   next
 
 quit:
- MOV	SI,[iloffset] ; restore illegal handler
- MOV	DI,[ilsegment]
- XOR	AX,AX
- MOV	DS,AX
- MOV	WORD [6 * 4 + 0],SI
- MOV	WORD [6 * 4 + 2],DI
+ MOV    SI,[iloffset] ; restore illegal handler
+ MOV    DI,[ilsegment]
+ XOR    AX,AX
+ MOV    DS,AX
+ MOV    WORD [6 * 4 + 0],SI
+ MOV    WORD [6 * 4 + 2],DI
 
- MOV	AX,4C00H      ; exit
- INT	21H
+ MOV    AX,4C00H      ; exit
+ INT    21H
 ;-------------------------------------------------------
 ; Data
 
 tab:
- DW	test_force_okay
- DW	test_force_fail
- DW	test_cmovb_ax_bx
- DW	test_cmovb_ax_cx
- DW	test_cmovb_ax_dx
- DW	test_cmovb_ax_si
- DW	test_cmovb_ax_di
- DW	test_cmovb_ax_bp
- DW	test_cmovb_ax_sp
- DW	test_cmovb_bx_ax
- DW	test_cmovb_bx_cx
- DW	test_cmovb_bx_dx
- DW	test_cmovb_bx_si
- DW	test_cmovb_bx_di
- DW	test_cmovb_bx_bp
- DW	test_cmovb_bx_sp
- DW	test_cmovb_cx_ax
- DW	test_cmovb_cx_bx
- DW	test_cmovb_cx_dx
- DW	test_cmovb_cx_si
- DW	test_cmovb_cx_di
- DW	test_cmovb_cx_bp
- DW	test_cmovb_cx_sp
- DW	test_cmovb_dx_ax
- DW	test_cmovb_dx_bx
- DW	test_cmovb_dx_cx
- DW	test_cmovb_dx_si
- DW	test_cmovb_dx_di
- DW	test_cmovb_dx_bp
- DW	test_cmovb_dx_sp
- DW	test_cmovb_si_ax
- DW	test_cmovb_si_bx
- DW	test_cmovb_si_cx
- DW	test_cmovb_si_dx
- DW	test_cmovb_si_di
- DW	test_cmovb_si_bp
- DW	test_cmovb_si_sp
- DW	test_cmovb_di_ax
- DW	test_cmovb_di_bx
- DW	test_cmovb_di_cx
- DW	test_cmovb_di_dx
- DW	test_cmovb_di_si
- DW	test_cmovb_di_bp
- DW	test_cmovb_di_sp
- DW	test_cmovb_bp_ax
- DW	test_cmovb_bp_bx
- DW	test_cmovb_bp_cx
- DW	test_cmovb_bp_dx
- DW	test_cmovb_bp_si
- DW	test_cmovb_bp_di
- DW	test_cmovb_bp_sp
+ DW     test_force_okay
+ DW     test_force_fail
+ DW     test_cmovb_ax_bx
+ DW     test_cmovb_ax_cx
+ DW     test_cmovb_ax_dx
+ DW     test_cmovb_ax_si
+ DW     test_cmovb_ax_di
+ DW     test_cmovb_ax_bp
+ DW     test_cmovb_ax_sp
+ DW     test_cmovb_bx_ax
+ DW     test_cmovb_bx_cx
+ DW     test_cmovb_bx_dx
+ DW     test_cmovb_bx_si
+ DW     test_cmovb_bx_di
+ DW     test_cmovb_bx_bp
+ DW     test_cmovb_bx_sp
+ DW     test_cmovb_cx_ax
+ DW     test_cmovb_cx_bx
+ DW     test_cmovb_cx_dx
+ DW     test_cmovb_cx_si
+ DW     test_cmovb_cx_di
+ DW     test_cmovb_cx_bp
+ DW     test_cmovb_cx_sp
+ DW     test_cmovb_dx_ax
+ DW     test_cmovb_dx_bx
+ DW     test_cmovb_dx_cx
+ DW     test_cmovb_dx_si
+ DW     test_cmovb_dx_di
+ DW     test_cmovb_dx_bp
+ DW     test_cmovb_dx_sp
+ DW     test_cmovb_si_ax
+ DW     test_cmovb_si_bx
+ DW     test_cmovb_si_cx
+ DW     test_cmovb_si_dx
+ DW     test_cmovb_si_di
+ DW     test_cmovb_si_bp
+ DW     test_cmovb_si_sp
+ DW     test_cmovb_di_ax
+ DW     test_cmovb_di_bx
+ DW     test_cmovb_di_cx
+ DW     test_cmovb_di_dx
+ DW     test_cmovb_di_si
+ DW     test_cmovb_di_bp
+ DW     test_cmovb_di_sp
+ DW     test_cmovb_bp_ax
+ DW     test_cmovb_bp_bx
+ DW     test_cmovb_bp_cx
+ DW     test_cmovb_bp_dx
+ DW     test_cmovb_bp_si
+ DW     test_cmovb_bp_di
+ DW     test_cmovb_bp_sp
 
- DW	test_cmovb_eax_ebx
- DW	test_cmovb_eax_ecx
- DW	test_cmovb_eax_edx
- DW	test_cmovb_eax_esi
- DW	test_cmovb_eax_edi
- DW	test_cmovb_eax_ebp
- DW	test_cmovb_eax_esp
- DW	test_cmovb_ebx_eax
- DW	test_cmovb_ebx_ecx
- DW	test_cmovb_ebx_edx
- DW	test_cmovb_ebx_esi
- DW	test_cmovb_ebx_edi
- DW	test_cmovb_ebx_ebp
- DW	test_cmovb_ebx_esp
- DW	test_cmovb_ecx_eax
- DW	test_cmovb_ecx_ebx
- DW	test_cmovb_ecx_edx
- DW	test_cmovb_ecx_esi
- DW	test_cmovb_ecx_edi
- DW	test_cmovb_ecx_ebp
- DW	test_cmovb_ecx_esp
- DW	test_cmovb_edx_eax
- DW	test_cmovb_edx_ebx
- DW	test_cmovb_edx_ecx
- DW	test_cmovb_edx_esi
- DW	test_cmovb_edx_edi
- DW	test_cmovb_edx_ebp
- DW	test_cmovb_edx_esp
- DW	test_cmovb_esi_eax
- DW	test_cmovb_esi_ebx
- DW	test_cmovb_esi_ecx
- DW	test_cmovb_esi_edx
- DW	test_cmovb_esi_edi
- DW	test_cmovb_esi_ebp
- DW	test_cmovb_esi_esp
- DW	test_cmovb_edi_eax
- DW	test_cmovb_edi_ebx
- DW	test_cmovb_edi_ecx
- DW	test_cmovb_edi_edx
- DW	test_cmovb_edi_esi
- DW	test_cmovb_edi_ebp
- DW	test_cmovb_edi_esp
- DW	test_cmovb_ebp_eax
- DW	test_cmovb_ebp_ebx
- DW	test_cmovb_ebp_ecx
- DW	test_cmovb_ebp_edx
- DW	test_cmovb_ebp_esi
- DW	test_cmovb_ebp_edi
- DW	test_cmovb_ebp_esp
- DW	0
+ DW     test_cmovb_eax_ebx
+ DW     test_cmovb_eax_ecx
+ DW     test_cmovb_eax_edx
+ DW     test_cmovb_eax_esi
+ DW     test_cmovb_eax_edi
+ DW     test_cmovb_eax_ebp
+ DW     test_cmovb_eax_esp
+ DW     test_cmovb_ebx_eax
+ DW     test_cmovb_ebx_ecx
+ DW     test_cmovb_ebx_edx
+ DW     test_cmovb_ebx_esi
+ DW     test_cmovb_ebx_edi
+ DW     test_cmovb_ebx_ebp
+ DW     test_cmovb_ebx_esp
+ DW     test_cmovb_ecx_eax
+ DW     test_cmovb_ecx_ebx
+ DW     test_cmovb_ecx_edx
+ DW     test_cmovb_ecx_esi
+ DW     test_cmovb_ecx_edi
+ DW     test_cmovb_ecx_ebp
+ DW     test_cmovb_ecx_esp
+ DW     test_cmovb_edx_eax
+ DW     test_cmovb_edx_ebx
+ DW     test_cmovb_edx_ecx
+ DW     test_cmovb_edx_esi
+ DW     test_cmovb_edx_edi
+ DW     test_cmovb_edx_ebp
+ DW     test_cmovb_edx_esp
+ DW     test_cmovb_esi_eax
+ DW     test_cmovb_esi_ebx
+ DW     test_cmovb_esi_ecx
+ DW     test_cmovb_esi_edx
+ DW     test_cmovb_esi_edi
+ DW     test_cmovb_esi_ebp
+ DW     test_cmovb_esi_esp
+ DW     test_cmovb_edi_eax
+ DW     test_cmovb_edi_ebx
+ DW     test_cmovb_edi_ecx
+ DW     test_cmovb_edi_edx
+ DW     test_cmovb_edi_esi
+ DW     test_cmovb_edi_ebp
+ DW     test_cmovb_edi_esp
+ DW     test_cmovb_ebp_eax
+ DW     test_cmovb_ebp_ebx
+ DW     test_cmovb_ebp_ecx
+ DW     test_cmovb_ebp_edx
+ DW     test_cmovb_ebp_esi
+ DW     test_cmovb_ebp_edi
+ DW     test_cmovb_ebp_esp
+ DW     0
 
 txt_pre: db " testing $"
 txt_wait: db " - $"
@@ -355,7 +356,7 @@ test_cmovb_ecx_esp DB "CMOVB ECX,ESP$"
 ;-------------------------------------------------------
 test_cmovb_edx_eax DB "CMOVB EDX,EAX$"
  TCMOVB EDX,EAX
-test_cmovb_edx_ebx DB "CMOVB EDX,BX$"
+test_cmovb_edx_ebx DB "CMOVB EDX,EBX$"
  TCMOVB EDX,EBX
 test_cmovb_edx_ecx DB "CMOVB EDX,ECX$"
  TCMOVB EDX,ECX
@@ -414,14 +415,17 @@ test_cmovb_ebp_esp DB "CMOVB EBP,ESP$"
  TCMOVB EBP,ESP
 ;-------------------------------------------------------
 test_force_okay DB "force okay$"
+ SUB AX,AX
+ INC AX
  JMP okay
 test_force_fail DB "force fail$"
+ SUB AX,AX
  JMP fail
 ;-------------------------------------------------------
 ; BSS
 
 stdstack  DW 0
 pointer   DW 0
-jump	  DW 0
+jump      DW 0
 iloffset  DW 0
 ilsegment DW 0
