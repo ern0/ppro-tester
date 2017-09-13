@@ -1,5 +1,4 @@
 #!/bin/bash
 
 clear
-date -Is
 fasm tester.asm
