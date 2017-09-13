@@ -34,8 +34,10 @@ ORG 256
  PrintLN 'PentiumPro instruction set tester'
 
  CALL   setIllegalHandler
+ MOV    [bkStack],SP
 
  Print  'CMOVB AX,BX - '
+ MOV    [bkJump],bug
  STC
  TCMOVB AX,BX
  JNE    bug
@@ -53,9 +55,8 @@ next:
 ;-------------------------------------------------------
 ; Some BSS
 
-fatal   DB 0
-timerSaveOffs DW 0
-timerSaveSeg  DW 0
+bkStack DW 0
+bkJump  DW 0
 ;-------------------------------------------------------
 setIllegalHandler:
 
@@ -72,9 +73,6 @@ setIllegalHandler:
 ;-------------------------------------------------------
 illegalHandler:
 
- PrintLN '#Illegal'
- MOV    AX,4c00H
- INT    21H
-
- IRET
+ MOV    SP,[bkStack]
+ JMP    [bkJump]
 ;-------------------------------------------------------
