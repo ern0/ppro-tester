@@ -1,33 +1,26 @@
 ;FASM source
-
 include 'ppro.inc'
-
-;-------------------------------------------------------
-MACRO Print string
-{
- CALL @F
- DB string,'$'
-@@:
- POP    DX
- MOV    AH,9
- INT    21H
-}
-;-------------------------------------------------------
-MACRO PrintLN string
-{
- CALL @F
- DB string,10,13,'$'
-@@:
- POP    DX
- MOV    AH,9
- INT    21H
-}
 ;-------------------------------------------------------
 ORG 256
+ MOV    AH,9            ; print title
+ LEA    DX,[txt_title]
+ INT    21H
 
- PrintLN 'PentiumPro instruction set tester'
+ FNINIT                 ; fill FPU stack
+ FLDLG2
+ FLDLN2
+ FLDL2E
+ FLDL2T
+ FLD    ST3
+ FADD   ST0,ST0
+ FLD    ST3
+ FADD   ST0,ST0
+ FLD    ST3
+ FADD   ST0,ST0
+ FLD    ST3
+ FADD   ST0,ST0
 
- XOR    AX,AX         ; set up illegal handler
+ XOR    AX,AX           ; set up illegal handler
  MOV    DS,AX
  MOV    SI,[6 * 4 + 0]
  MOV    DI,[6 * 4 + 2]
@@ -43,52 +36,81 @@ ORG 256
  MOV    [pointer],tab
 
 next:
- MOV    BX,[pointer]  ; pick next table item
+ MOV    BX,[pointer]    ; pick next table item
  ADD    [pointer],2
- TEST   WORD [BX],-1
+ MOV    DI,[BX]
+ TEST   DI,DI
  JZ     quit
-
- MOV    AH,9          ; print title
+ MOV    [pointer2],DI
+ MOV    AH,9            ; print title
  LEA    DX,[txt_pre]
  INT    21H
- MOV    DX,[BX]
+ MOV    DX,DI
  INT    21H
  MOV    AH,9
  LEA    DX,[txt_wait]
  INT    21H
+next2:
+ MOV    DI,[pointer2]   ; pick next table item
+ MOV    CX,-1
 
- MOV    DI,[BX]       ; skip title
- MOV    AL,'$'
- REPNZ SCASB
+ MOV    AL,'$'          ; skip title
+ REPNZ  SCASB
 
- MOV    [jump],DI     ; perform test
+ TEST   WORD [DI],CX
+ JZ     next
+ MOV    [jump],DI       ; perform test
+
+again:
+ MOV    AL,0C3H         ; skip code
+ REPNZ  SCASB
+ MOV    [pointer2],DI   ; perform test
+
+ MOV    SI,DI
+@@:
+ LODSB
+ CMP    AL,'$'
+ JE     @F
+ CMP    AL,'z'
+ JNA    @B
+ JMP    again
+@@:
+
  CALL   [jump]
  JZ     fail
 
 okay:
- MOV   AH,9
- LEA   DX,[txt_okay]
- INT   21H
- JMP   next
+ MOV    AH,2
+ MOV    DL,'/'
+ INT    21H
+ JMP    next2
 
 illegal:
- MOV   SP,[stdstack]  ; reset stack, then fail
+ MOV   SP,[stdstack]    ; reset stack, then fail
 
 fail:
- MOV   AH,9
- LEA   DX,[txt_fail]
- INT   21H
- JMP   next
+ MOV    AH,9
+ MOV    DX,[pointer2]
+ INT    21H
+ MOV    AH,2
+ MOV    DL,'!'
+ INT    21H
+ MOV    DL,' '
+ INT    21H
+ JMP    next2
 
 quit:
- MOV    SI,[iloffset] ; restore illegal handler
+
+ MOV    SI,[iloffset]   ; restore illegal handler
  MOV    DI,[ilsegment]
  XOR    AX,AX
  MOV    DS,AX
  MOV    WORD [6 * 4 + 0],SI
  MOV    WORD [6 * 4 + 2],DI
 
- MOV    AX,4C00H      ; exit
+ FNINIT                 ; empty FPU stack
+
+ MOV    AX,4C00H        ; exit
  INT    21H
 ;-------------------------------------------------------
 ; Data
@@ -96,336 +118,668 @@ quit:
 tab:
  DW     test_force_okay
  DW     test_force_fail
- DW     test_cmovb_ax_bx
- DW     test_cmovb_ax_cx
- DW     test_cmovb_ax_dx
- DW     test_cmovb_ax_si
- DW     test_cmovb_ax_di
- DW     test_cmovb_ax_bp
- DW     test_cmovb_ax_sp
- DW     test_cmovb_bx_ax
- DW     test_cmovb_bx_cx
- DW     test_cmovb_bx_dx
- DW     test_cmovb_bx_si
- DW     test_cmovb_bx_di
- DW     test_cmovb_bx_bp
- DW     test_cmovb_bx_sp
- DW     test_cmovb_cx_ax
- DW     test_cmovb_cx_bx
- DW     test_cmovb_cx_dx
- DW     test_cmovb_cx_si
- DW     test_cmovb_cx_di
- DW     test_cmovb_cx_bp
- DW     test_cmovb_cx_sp
- DW     test_cmovb_dx_ax
- DW     test_cmovb_dx_bx
- DW     test_cmovb_dx_cx
- DW     test_cmovb_dx_si
- DW     test_cmovb_dx_di
- DW     test_cmovb_dx_bp
- DW     test_cmovb_dx_sp
- DW     test_cmovb_si_ax
- DW     test_cmovb_si_bx
- DW     test_cmovb_si_cx
- DW     test_cmovb_si_dx
- DW     test_cmovb_si_di
- DW     test_cmovb_si_bp
- DW     test_cmovb_si_sp
- DW     test_cmovb_di_ax
- DW     test_cmovb_di_bx
- DW     test_cmovb_di_cx
- DW     test_cmovb_di_dx
- DW     test_cmovb_di_si
- DW     test_cmovb_di_bp
- DW     test_cmovb_di_sp
- DW     test_cmovb_bp_ax
- DW     test_cmovb_bp_bx
- DW     test_cmovb_bp_cx
- DW     test_cmovb_bp_dx
- DW     test_cmovb_bp_si
- DW     test_cmovb_bp_di
- DW     test_cmovb_bp_sp
-
- DW     test_cmovb_eax_ebx
- DW     test_cmovb_eax_ecx
- DW     test_cmovb_eax_edx
- DW     test_cmovb_eax_esi
- DW     test_cmovb_eax_edi
- DW     test_cmovb_eax_ebp
- DW     test_cmovb_eax_esp
- DW     test_cmovb_ebx_eax
- DW     test_cmovb_ebx_ecx
- DW     test_cmovb_ebx_edx
- DW     test_cmovb_ebx_esi
- DW     test_cmovb_ebx_edi
- DW     test_cmovb_ebx_ebp
- DW     test_cmovb_ebx_esp
- DW     test_cmovb_ecx_eax
- DW     test_cmovb_ecx_ebx
- DW     test_cmovb_ecx_edx
- DW     test_cmovb_ecx_esi
- DW     test_cmovb_ecx_edi
- DW     test_cmovb_ecx_ebp
- DW     test_cmovb_ecx_esp
- DW     test_cmovb_edx_eax
- DW     test_cmovb_edx_ebx
- DW     test_cmovb_edx_ecx
- DW     test_cmovb_edx_esi
- DW     test_cmovb_edx_edi
- DW     test_cmovb_edx_ebp
- DW     test_cmovb_edx_esp
- DW     test_cmovb_esi_eax
- DW     test_cmovb_esi_ebx
- DW     test_cmovb_esi_ecx
- DW     test_cmovb_esi_edx
- DW     test_cmovb_esi_edi
- DW     test_cmovb_esi_ebp
- DW     test_cmovb_esi_esp
- DW     test_cmovb_edi_eax
- DW     test_cmovb_edi_ebx
- DW     test_cmovb_edi_ecx
- DW     test_cmovb_edi_edx
- DW     test_cmovb_edi_esi
- DW     test_cmovb_edi_ebp
- DW     test_cmovb_edi_esp
- DW     test_cmovb_ebp_eax
- DW     test_cmovb_ebp_ebx
- DW     test_cmovb_ebp_ecx
- DW     test_cmovb_ebp_edx
- DW     test_cmovb_ebp_esi
- DW     test_cmovb_ebp_edi
- DW     test_cmovb_ebp_esp
+ DW     test_cmovb
+ DW     test_cmovnb
+ DW     test_fcmovb
+ DW     test_fcmovnb
+ DW     test_fcmove
+ DW     test_fcmovne
+ DW     test_fcmovu
+ DW     test_fcmovnu
+ DW     test_fcmovbe
+ DW     test_fcmovnbe
  DW     0
 
-txt_pre: db " testing $"
-txt_wait: db " - $"
-txt_okay: db "okay",13,10,'$'
-txt_fail: db "FAIL",13,10,'$'
+txt_pre: db 10,13," testing $"
+txt_wait: db " $"
+txt_title: db "PentiumPro instruction set tester$"
 
 ;-------------------------------------------------------
-test_cmovb_ax_bx DB "CMOVB AX,BX$"
+test_cmovb:
+ DB "CMOVB$"
  TCMOVB AX,BX
-test_cmovb_ax_cx DB "CMOVB AX,CX$"
+ DB "AX,BX$"
  TCMOVB AX,CX
-test_cmovb_ax_dx DB "CMOVB AX,DX$"
+ DB "AX,CX$"
  TCMOVB AX,DX
-test_cmovb_ax_si DB "CMOVB AX,SI$"
+ DB "AX,DX$"
  TCMOVB AX,SI
-test_cmovb_ax_di DB "CMOVB AX,DI$"
+ DB "AX,SI$"
  TCMOVB AX,DI
-test_cmovb_ax_bp DB "CMOVB AX,BP$"
+ DB "AX,DI$"
  TCMOVB AX,BP
-test_cmovb_ax_sp DB "CMOVB AX,SP$"
+ DB "AX,BP$"
  TCMOVB AX,SP
+ DB "AX,SP$"
 ;-------------------------------------------------------
-test_cmovb_bx_ax DB "CMOVB BX,AX$"
  TCMOVB BX,AX
-test_cmovb_bx_cx DB "CMOVB BX,CX$"
+ DB "BX,AX$"
  TCMOVB BX,CX
-test_cmovb_bx_dx DB "CMOVB BX,DX$"
+ DB "BX,CX$"
  TCMOVB BX,DX
-test_cmovb_bx_si DB "CMOVB BX,SI$"
+ DB "BX,DX$"
  TCMOVB BX,SI
-test_cmovb_bx_di DB "CMOVB BX,DI$"
+ DB "BX,SI$"
  TCMOVB BX,DI
-test_cmovb_bx_bp DB "CMOVB BX,BP$"
+ DB "BX,DI$"
  TCMOVB BX,BP
-test_cmovb_bx_sp DB "CMOVB BX,SP$"
+ DB "BX,BP$"
  TCMOVB BX,SP
+ DB "BX,SP$"
 ;-------------------------------------------------------
-test_cmovb_cx_ax DB "CMOVB CX,AX$"
  TCMOVB CX,AX
-test_cmovb_cx_bx DB "CMOVB CX,BX$"
+ DB "CX,AX$"
  TCMOVB CX,BX
-test_cmovb_cx_dx DB "CMOVB CX,DX$"
+ DB "CX,BX$"
  TCMOVB CX,DX
-test_cmovb_cx_si DB "CMOVB CX,SI$"
+ DB "CX,DX$"
  TCMOVB CX,SI
-test_cmovb_cx_di DB "CMOVB CX,DI$"
+ DB "CX,SI$"
  TCMOVB CX,DI
-test_cmovb_cx_bp DB "CMOVB CX,BP$"
+ DB "CX,DI$"
  TCMOVB CX,BP
-test_cmovb_cx_sp DB "CMOVB CX,SP$"
+ DB "CX,BP$"
  TCMOVB CX,SP
+ DB "CX,SP$"
 ;-------------------------------------------------------
-test_cmovb_dx_ax DB "CMOVB DX,AX$"
  TCMOVB DX,AX
-test_cmovb_dx_bx DB "CMOVB DX,BX$"
+ DB "DX,AX$"
  TCMOVB DX,BX
-test_cmovb_dx_cx DB "CMOVB DX,CX$"
+ DB "DX,BX$"
  TCMOVB DX,CX
-test_cmovb_dx_si DB "CMOVB DX,SI$"
+ DB "DX,CX$"
  TCMOVB DX,SI
-test_cmovb_dx_di DB "CMOVB DX,DI$"
+ DB "DX,SI$"
  TCMOVB DX,DI
-test_cmovb_dx_bp DB "CMOVB DX,BP$"
+ DB "DX,DI$"
  TCMOVB DX,BP
-test_cmovb_dx_sp DB "CMOVB DX,SP$"
+ DB "DX,BP$"
  TCMOVB DX,SP
+ DB "DX,SP$"
 ;-------------------------------------------------------
-test_cmovb_si_ax DB "CMOVB SI,AX$"
  TCMOVB SI,AX
-test_cmovb_si_bx DB "CMOVB SI,BX$"
+ DB "SI,AX$"
  TCMOVB SI,BX
-test_cmovb_si_cx DB "CMOVB SI,CX$"
+ DB "SI,BX$"
  TCMOVB SI,CX
-test_cmovb_si_dx DB "CMOVB SI,DX$"
+ DB "SI,CX$"
  TCMOVB SI,DX
-test_cmovb_si_di DB "CMOVB SI,DI$"
+ DB "SI,DX$"
  TCMOVB SI,DI
-test_cmovb_si_bp DB "CMOVB SI,BP$"
+ DB "SI,DI$"
  TCMOVB SI,BP
-test_cmovb_si_sp DB "CMOVB SI,SP$"
+ DB "SI,BP$"
  TCMOVB SI,SP
+ DB "SI,SP$"
 ;-------------------------------------------------------
-test_cmovb_di_ax DB "CMOVB DI,AX$"
  TCMOVB DI,AX
-test_cmovb_di_bx DB "CMOVB DI,BX$"
+ DB "DI,AX$"
  TCMOVB DI,BX
-test_cmovb_di_cx DB "CMOVB DI,CX$"
+ DB "DI,BX$"
  TCMOVB DI,CX
-test_cmovb_di_dx DB "CMOVB DI,DX$"
+ DB "DI,CX$"
  TCMOVB DI,DX
-test_cmovb_di_si DB "CMOVB DI,SI$"
+ DB "DI,DX$"
  TCMOVB DI,SI
-test_cmovb_di_bp DB "CMOVB DI,BP$"
+ DB "DI,SI$"
  TCMOVB DI,BP
-test_cmovb_di_sp DB "CMOVB DI,SP$"
+ DB "DI,BP$"
  TCMOVB DI,SP
+ DB "DI,SP$"
 ;-------------------------------------------------------
-test_cmovb_bp_ax DB "CMOVB BP,AX$"
  TCMOVB BP,AX
-test_cmovb_bp_bx DB "CMOVB BP,BX$"
+ DB "BP,AX$"
  TCMOVB BP,BX
-test_cmovb_bp_cx DB "CMOVB BP,CX$"
+ DB "BP,BX$"
  TCMOVB BP,CX
-test_cmovb_bp_dx DB "CMOVB BP,DX$"
+ DB "BP,CX$"
  TCMOVB BP,DX
-test_cmovb_bp_si DB "CMOVB BP,SI$"
+ DB "BP,DX$"
  TCMOVB BP,SI
-test_cmovb_bp_di DB "CMOVB BP,DI$"
+ DB "BP,SI$"
  TCMOVB BP,DI
-test_cmovb_bp_sp DB "CMOVB BP,SP$"
+ DB "BP,DI$"
  TCMOVB BP,SP
-
+ DB "BP,SP$"
 ;-------------------------------------------------------
-test_cmovb_eax_ebx DB "CMOVB EAX,EBX$"
  TCMOVB EAX,EBX
-test_cmovb_eax_ecx DB "CMOVB EAX,ECX$"
+ DB "EAX,EBX$"
  TCMOVB EAX,ECX
-test_cmovb_eax_edx DB "CMOVB EAX,EDX$"
+ DB "EAX,ECX$"
  TCMOVB EAX,EDX
-test_cmovb_eax_esi DB "CMOVB EAX,ESI$"
+ DB "EAX,EDX$"
  TCMOVB EAX,ESI
-test_cmovb_eax_edi DB "CMOVB EAX,EDI$"
+ DB "EAX,ESI$"
  TCMOVB EAX,EDI
-test_cmovb_eax_ebp DB "CMOVB EAX,EBP$"
+ DB "EAX,EDI$"
  TCMOVB EAX,EBP
-test_cmovb_eax_esp DB "CMOVB EAX,ESP$"
+ DB "EAX,EBP$"
  TCMOVB EAX,ESP
+ DB "EAX,ESP$"
 ;-------------------------------------------------------
-test_cmovb_ebx_eax DB "CMOVB EBX,EAX$"
  TCMOVB EBX,EAX
-test_cmovb_ebx_ecx DB "CMOVB EBX,ECX$"
+ DB "EBX,EAX$"
  TCMOVB EBX,ECX
-test_cmovb_ebx_edx DB "CMOVB EBX,EDX$"
+ DB "EBX,ECX$"
  TCMOVB EBX,EDX
-test_cmovb_ebx_esi DB "CMOVB EBX,ESI$"
+ DB "EBX,EDX$"
  TCMOVB EBX,ESI
-test_cmovb_ebx_edi DB "CMOVB EBX,EDI$"
+ DB "EBX,ESI$"
  TCMOVB EBX,EDI
-test_cmovb_ebx_ebp DB "CMOVB EBX,EBP$"
+ DB "EBX,EDI$"
  TCMOVB EBX,EBP
-test_cmovb_ebx_esp DB "CMOVB EBX,ESP$"
+ DB "EBX,EBP$"
  TCMOVB EBX,ESP
+ DB "EBX,ESP$"
 ;-------------------------------------------------------
-test_cmovb_ecx_eax DB "CMOVB ECX,EAX$"
  TCMOVB ECX,EAX
-test_cmovb_ecx_ebx DB "CMOVB ECX,EBX$"
+ DB "ECX,EAX$"
  TCMOVB ECX,EBX
-test_cmovb_ecx_edx DB "CMOVB ECX,EDX$"
+ DB "ECX,EBX$"
  TCMOVB ECX,EDX
-test_cmovb_ecx_esi DB "CMOVB ECX,ESI$"
+ DB "ECX,EDX$"
  TCMOVB ECX,ESI
-test_cmovb_ecx_edi DB "CMOVB ECX,EDI$"
+ DB "ECX,ESI$"
  TCMOVB ECX,EDI
-test_cmovb_ecx_ebp DB "CMOVB ECX,EBP$"
+ DB "ECX,EDI$"
  TCMOVB ECX,EBP
-test_cmovb_ecx_esp DB "CMOVB ECX,ESP$"
+ DB "ECX,EBP$"
  TCMOVB ECX,ESP
+ DB "ECX,ESP$"
 ;-------------------------------------------------------
-test_cmovb_edx_eax DB "CMOVB EDX,EAX$"
  TCMOVB EDX,EAX
-test_cmovb_edx_ebx DB "CMOVB EDX,EBX$"
+ DB "EDX,EAX$"
  TCMOVB EDX,EBX
-test_cmovb_edx_ecx DB "CMOVB EDX,ECX$"
+ DB "EDX,EBX$"
  TCMOVB EDX,ECX
-test_cmovb_edx_esi DB "CMOVB EDX,ESI$"
+ DB "EDX,ECX$"
  TCMOVB EDX,ESI
-test_cmovb_edx_edi DB "CMOVB EDX,EDI$"
+ DB "EDX,ESI$"
  TCMOVB EDX,EDI
-test_cmovb_edx_ebp DB "CMOVB EDX,EBP$"
+ DB "EDX,EDI$"
  TCMOVB EDX,EBP
-test_cmovb_edx_esp DB "CMOVB EDX,ESP$"
+ DB "EDX,EBP$"
  TCMOVB EDX,ESP
+ DB "EDX,ESP$"
 ;-------------------------------------------------------
-test_cmovb_esi_eax DB "CMOVB ESI,EAX$"
  TCMOVB ESI,EAX
-test_cmovb_esi_ebx DB "CMOVB ESI,EBX$"
+ DB "ESI,EAX$"
  TCMOVB ESI,EBX
-test_cmovb_esi_ecx DB "CMOVB ESI,ECX$"
+ DB "ESI,EBX$"
  TCMOVB ESI,ECX
-test_cmovb_esi_edx DB "CMOVB ESI,EDX$"
+ DB "ESI,ECX$"
  TCMOVB ESI,EDX
-test_cmovb_esi_edi DB "CMOVB ESI,EDI$"
+ DB "ESI,EDX$"
  TCMOVB ESI,EDI
-test_cmovb_esi_ebp DB "CMOVB ESI,EBP$"
+ DB "ESI,EDI$"
  TCMOVB ESI,EBP
-test_cmovb_esi_esp DB "CMOVB ESI,ESP$"
+ DB "ESI,EBP$"
  TCMOVB ESI,ESP
+ DB "ESI,ESP$"
 ;-------------------------------------------------------
-test_cmovb_edi_eax DB "CMOVB EDI,EAX$"
  TCMOVB EDI,EAX
-test_cmovb_edi_ebx DB "CMOVB EDI,EBX$"
+ DB "EDI,EAX$"
  TCMOVB EDI,EBX
-test_cmovb_edi_ecx DB "CMOVB EDI,ECX$"
+ DB "EDI,EBX$"
  TCMOVB EDI,ECX
-test_cmovb_edi_edx DB "CMOVB EDI,EDX$"
+ DB "EDI,ECX$"
  TCMOVB EDI,EDX
-test_cmovb_edi_esi DB "CMOVB EDI,ESI$"
+ DB "EDI,EDX$"
  TCMOVB EDI,ESI
-test_cmovb_edi_ebp DB "CMOVB EDI,EBP$"
+ DB "EDI,ESI$"
  TCMOVB EDI,EBP
-test_cmovb_edi_esp DB "CMOVB EDI,ESP$"
+ DB "EDI,EBP$"
  TCMOVB EDI,ESP
+ DB "EDI,ESP$"
 ;-------------------------------------------------------
-test_cmovb_ebp_eax DB "CMOVB EBP,EAX$"
  TCMOVB EBP,EAX
-test_cmovb_ebp_ebx DB "CMOVB EBP,EBX$"
+ DB "EBP,EAX$"
  TCMOVB EBP,EBX
-test_cmovb_ebp_ecx DB "CMOVB EBP,ECX$"
+ DB "EBP,EBX$"
  TCMOVB EBP,ECX
-test_cmovb_ebp_edx DB "CMOVB EBP,EDX$"
+ DB "EBP,ECX$"
  TCMOVB EBP,EDX
-test_cmovb_ebp_esi DB "CMOVB EBP,ESI$"
+ DB "EBP,EDX$"
  TCMOVB EBP,ESI
-test_cmovb_ebp_edi DB "CMOVB EBP,EDI$"
+ DB "EBP,ESI$"
  TCMOVB EBP,EDI
-test_cmovb_ebp_esp DB "CMOVB EBP,ESP$"
+ DB "EBP,EDI$"
  TCMOVB EBP,ESP
+ DB "EBP,ESP$"
+ DW 0
 ;-------------------------------------------------------
-test_force_okay DB "force okay$"
+test_cmovnb:
+ DB "CMOVNB$"
+ TCMOVNB AX,BX
+ DB "AX,BX$"
+ TCMOVNB AX,CX
+ DB "AX,CX$"
+ TCMOVNB AX,DX
+ DB "AX,DX$"
+ TCMOVNB AX,SI
+ DB "AX,SI$"
+ TCMOVNB AX,DI
+ DB "AX,DI$"
+ TCMOVNB AX,BP
+ DB "AX,BP$"
+ TCMOVNB AX,SP
+ DB "AX,SP$"
+;-------------------------------------------------------
+ TCMOVNB BX,AX
+ DB "BX,AX$"
+ TCMOVNB BX,CX
+ DB "BX,CX$"
+ TCMOVNB BX,DX
+ DB "BX,DX$"
+ TCMOVNB BX,SI
+ DB "BX,SI$"
+ TCMOVNB BX,DI
+ DB "BX,DI$"
+ TCMOVNB BX,BP
+ DB "BX,BP$"
+ TCMOVNB BX,SP
+ DB "BX,SP$"
+;-------------------------------------------------------
+ TCMOVNB CX,AX
+ DB "CX,AX$"
+ TCMOVNB CX,BX
+ DB "CX,BX$"
+ TCMOVNB CX,DX
+ DB "CX,DX$"
+ TCMOVNB CX,SI
+ DB "CX,SI$"
+ TCMOVNB CX,DI
+ DB "CX,DI$"
+ TCMOVNB CX,BP
+ DB "CX,BP$"
+ TCMOVNB CX,SP
+ DB "CX,SP$"
+;-------------------------------------------------------
+ TCMOVNB DX,AX
+ DB "DX,AX$"
+ TCMOVNB DX,BX
+ DB "DX,BX$"
+ TCMOVNB DX,CX
+ DB "DX,CX$"
+ TCMOVNB DX,SI
+ DB "DX,SI$"
+ TCMOVNB DX,DI
+ DB "DX,DI$"
+ TCMOVNB DX,BP
+ DB "DX,BP$"
+ TCMOVNB DX,SP
+ DB "DX,SP$"
+;-------------------------------------------------------
+ TCMOVNB SI,AX
+ DB "SI,AX$"
+ TCMOVNB SI,BX
+ DB "SI,BX$"
+ TCMOVNB SI,CX
+ DB "SI,CX$"
+ TCMOVNB SI,DX
+ DB "SI,DX$"
+ TCMOVNB SI,DI
+ DB "SI,DI$"
+ TCMOVNB SI,BP
+ DB "SI,BP$"
+ TCMOVNB SI,SP
+ DB "SI,SP$"
+;-------------------------------------------------------
+ TCMOVNB DI,AX
+ DB "DI,AX$"
+ TCMOVNB DI,BX
+ DB "DI,BX$"
+ TCMOVNB DI,CX
+ DB "DI,CX$"
+ TCMOVNB DI,DX
+ DB "DI,DX$"
+ TCMOVNB DI,SI
+ DB "DI,SI$"
+ TCMOVNB DI,BP
+ DB "DI,BP$"
+ TCMOVNB DI,SP
+ DB "DI,SP$"
+;-------------------------------------------------------
+ TCMOVNB BP,AX
+ DB "BP,AX$"
+ TCMOVNB BP,BX
+ DB "BP,BX$"
+ TCMOVNB BP,CX
+ DB "BP,CX$"
+ TCMOVNB BP,DX
+ DB "BP,DX$"
+ TCMOVNB BP,SI
+ DB "BP,SI$"
+ TCMOVNB BP,DI
+ DB "BP,DI$"
+ TCMOVNB BP,SP
+ DB "BP,SP$"
+;-------------------------------------------------------
+ TCMOVNB EAX,EBX
+ DB "EAX,EBX$"
+ TCMOVNB EAX,ECX
+ DB "EAX,ECX$"
+ TCMOVNB EAX,EDX
+ DB "EAX,EDX$"
+ TCMOVNB EAX,ESI
+ DB "EAX,ESI$"
+ TCMOVNB EAX,EDI
+ DB "EAX,EDI$"
+ TCMOVNB EAX,EBP
+ DB "EAX,EBP$"
+ TCMOVNB EAX,ESP
+ DB "EAX,ESP$"
+;-------------------------------------------------------
+ TCMOVNB EBX,EAX
+ DB "EBX,EAX$"
+ TCMOVNB EBX,ECX
+ DB "EBX,ECX$"
+ TCMOVNB EBX,EDX
+ DB "EBX,EDX$"
+ TCMOVNB EBX,ESI
+ DB "EBX,ESI$"
+ TCMOVNB EBX,EDI
+ DB "EBX,EDI$"
+ TCMOVNB EBX,EBP
+ DB "EBX,EBP$"
+ TCMOVNB EBX,ESP
+ DB "EBX,ESP$"
+;-------------------------------------------------------
+ TCMOVNB ECX,EAX
+ DB "ECX,EAX$"
+ TCMOVNB ECX,EBX
+ DB "ECX,EBX$"
+ TCMOVNB ECX,EDX
+ DB "ECX,EDX$"
+ TCMOVNB ECX,ESI
+ DB "ECX,ESI$"
+ TCMOVNB ECX,EDI
+ DB "ECX,EDI$"
+ TCMOVNB ECX,EBP
+ DB "ECX,EBP$"
+ TCMOVNB ECX,ESP
+ DB "ECX,ESP$"
+;-------------------------------------------------------
+ TCMOVNB EDX,EAX
+ DB "EDX,EAX$"
+ TCMOVNB EDX,EBX
+ DB "EDX,EBX$"
+ TCMOVNB EDX,ECX
+ DB "EDX,ECX$"
+ TCMOVNB EDX,ESI
+ DB "EDX,ESI$"
+ TCMOVNB EDX,EDI
+ DB "EDX,EDI$"
+ TCMOVNB EDX,EBP
+ DB "EDX,EBP$"
+ TCMOVNB EDX,ESP
+ DB "EDX,ESP$"
+;-------------------------------------------------------
+ TCMOVNB ESI,EAX
+ DB "ESI,EAX$"
+ TCMOVNB ESI,EBX
+ DB "ESI,EBX$"
+ TCMOVNB ESI,ECX
+ DB "ESI,ECX$"
+ TCMOVNB ESI,EDX
+ DB "ESI,EDX$"
+ TCMOVNB ESI,EDI
+ DB "ESI,EDI$"
+ TCMOVNB ESI,EBP
+ DB "ESI,EBP$"
+ TCMOVNB ESI,ESP
+ DB "ESI,ESP$"
+;-------------------------------------------------------
+ TCMOVNB EDI,EAX
+ DB "EDI,EAX$"
+ TCMOVNB EDI,EBX
+ DB "EDI,EBX$"
+ TCMOVNB EDI,ECX
+ DB "EDI,ECX$"
+ TCMOVNB EDI,EDX
+ DB "EDI,EDX$"
+ TCMOVNB EDI,ESI
+ DB "EDI,ESI$"
+ TCMOVNB EDI,EBP
+ DB "EDI,EBP$"
+ TCMOVNB EDI,ESP
+ DB "EDI,ESP$"
+;-------------------------------------------------------
+ TCMOVNB EBP,EAX
+ DB "EBP,EAX$"
+ TCMOVNB EBP,EBX
+ DB "EBP,EBX$"
+ TCMOVNB EBP,ECX
+ DB "EBP,ECX$"
+ TCMOVNB EBP,EDX
+ DB "EBP,EDX$"
+ TCMOVNB EBP,ESI
+ DB "EBP,ESI$"
+ TCMOVNB EBP,EDI
+ DB "EBP,EDI$"
+ TCMOVNB EBP,ESP
+ DB "EBP,ESP$"
+ DW 0
+;-------------------------------------------------------
+test_fcmovb:
+ DB "FCMOVB$"
+ TFCMOVB ST1
+ DB "ST0,ST1$"
+ TFCMOVB ST2
+ DB "ST0,ST2$"
+ TFCMOVB ST3
+ DB "ST0,ST3$"
+ TFCMOVB ST4
+ DB "ST0,ST4$"
+ TFCMOVB ST5
+ DB "ST0,ST5$"
+ TFCMOVB ST6
+ DB "ST0,ST6$"
+ TFCMOVB ST7
+ DB "ST0,ST7$"
+ DW 0
+;-------------------------------------------------------
+test_fcmovnb:
+ DB "FCMOVNB$"
+ TFCMOVNB ST1
+ DB "ST0,ST1$"
+ TFCMOVNB ST2
+ DB "ST0,ST2$"
+ TFCMOVNB ST3
+ DB "ST0,ST3$"
+ TFCMOVNB ST4
+ DB "ST0,ST4$"
+ TFCMOVNB ST5
+ DB "ST0,ST5$"
+ TFCMOVNB ST6
+ DB "ST0,ST6$"
+ TFCMOVNB ST7
+ DB "ST0,ST7$"
+ DW 0
+;-------------------------------------------------------
+test_fcmove:
+ DB "FCMOVE$"
+ TFCMOVE ST1
+ DB "ST0,ST1$"
+ TFCMOVE ST2
+ DB "ST0,ST2$"
+ TFCMOVE ST3
+ DB "ST0,ST3$"
+ TFCMOVE ST4
+ DB "ST0,ST4$"
+ TFCMOVE ST5
+ DB "ST0,ST5$"
+ TFCMOVE ST6
+ DB "ST0,ST6$"
+ TFCMOVE ST7
+ DB "ST0,ST7$"
+ DW 0
+;-------------------------------------------------------
+test_fcmovne:
+ DB "FCMOVNE$"
+ TFCMOVNE ST1
+ DB "ST0,ST1$"
+ TFCMOVNE ST2
+ DB "ST0,ST2$"
+ TFCMOVNE ST3
+ DB "ST0,ST3$"
+ TFCMOVNE ST4
+ DB "ST0,ST4$"
+ TFCMOVNE ST5
+ DB "ST0,ST5$"
+ TFCMOVNE ST6
+ DB "ST0,ST6$"
+ TFCMOVNE ST7
+ DB "ST0,ST7$"
+ DW 0
+;-------------------------------------------------------
+test_fcmovu:
+ DB "FCMOVU$"
+ TFCMOVU ST1
+ DB "ST0,ST1$"
+ TFCMOVU ST2
+ DB "ST0,ST2$"
+ TFCMOVU ST3
+ DB "ST0,ST3$"
+ TFCMOVU ST4
+ DB "ST0,ST4$"
+ TFCMOVU ST5
+ DB "ST0,ST5$"
+ TFCMOVU ST6
+ DB "ST0,ST6$"
+ TFCMOVU ST7
+ DB "ST0,ST7$"
+ DW 0
+;-------------------------------------------------------
+test_fcmovnu:
+ DB "FCMOVNU$"
+ TFCMOVNU ST1
+ DB "ST0,ST1$"
+ TFCMOVNU ST2
+ DB "ST0,ST2$"
+ TFCMOVNU ST3
+ DB "ST0,ST3$"
+ TFCMOVNU ST4
+ DB "ST0,ST4$"
+ TFCMOVNU ST5
+ DB "ST0,ST5$"
+ TFCMOVNU ST6
+ DB "ST0,ST6$"
+ TFCMOVNU ST7
+ DB "ST0,ST7$"
+ DW 0
+;-------------------------------------------------------
+test_fcmovbe:
+ DB "FCMOVBE$"
+ TFCMOVBE1 ST1
+ DB "ST0,ST1$"
+ TFCMOVBE1 ST2
+ DB "ST0,ST2$"
+ TFCMOVBE1 ST3
+ DB "ST0,ST3$"
+ TFCMOVBE1 ST4
+ DB "ST0,ST4$"
+ TFCMOVBE1 ST5
+ DB "ST0,ST5$"
+ TFCMOVBE1 ST6
+ DB "ST0,ST6$"
+ TFCMOVBE1 ST7
+ DB "ST0,ST7$"
+ TFCMOVBE2 ST1
+ DB "ST0,ST1$"
+ TFCMOVBE2 ST2
+ DB "ST0,ST2$"
+ TFCMOVBE2 ST3
+ DB "ST0,ST3$"
+ TFCMOVBE2 ST4
+ DB "ST0,ST4$"
+ TFCMOVBE2 ST5
+ DB "ST0,ST5$"
+ TFCMOVBE2 ST6
+ DB "ST0,ST6$"
+ TFCMOVBE2 ST7
+ DB "ST0,ST7$"
+ TFCMOVBE3 ST1
+ DB "ST0,ST1$"
+ TFCMOVBE3 ST2
+ DB "ST0,ST2$"
+ TFCMOVBE3 ST3
+ DB "ST0,ST3$"
+ TFCMOVBE3 ST4
+ DB "ST0,ST4$"
+ TFCMOVBE3 ST5
+ DB "ST0,ST5$"
+ TFCMOVBE3 ST6
+ DB "ST0,ST6$"
+ TFCMOVBE3 ST7
+ DB "ST0,ST7$"
+ DW 0
+;-------------------------------------------------------
+test_fcmovnbe:
+ DB "FCMOVNBE$"
+ TFCMOVNBE1 ST1
+ DB "ST0,ST1$"
+ TFCMOVNBE1 ST2
+ DB "ST0,ST2$"
+ TFCMOVNBE1 ST3
+ DB "ST0,ST3$"
+ TFCMOVNBE1 ST4
+ DB "ST0,ST4$"
+ TFCMOVNBE1 ST5
+ DB "ST0,ST5$"
+ TFCMOVNBE1 ST6
+ DB "ST0,ST6$"
+ TFCMOVNBE1 ST7
+ DB "ST0,ST7$"
+ TFCMOVNBE2 ST1
+ DB "ST0,ST1$"
+ TFCMOVNBE2 ST2
+ DB "ST0,ST2$"
+ TFCMOVNBE2 ST3
+ DB "ST0,ST3$"
+ TFCMOVNBE2 ST4
+ DB "ST0,ST4$"
+ TFCMOVNBE2 ST5
+ DB "ST0,ST5$"
+ TFCMOVNBE2 ST6
+ DB "ST0,ST6$"
+ TFCMOVNBE2 ST7
+ DB "ST0,ST7$"
+ TFCMOVNBE3 ST1
+ DB "ST0,ST1$"
+ TFCMOVNBE3 ST2
+ DB "ST0,ST2$"
+ TFCMOVNBE3 ST3
+ DB "ST0,ST3$"
+ TFCMOVNBE3 ST4
+ DB "ST0,ST4$"
+ TFCMOVNBE3 ST5
+ DB "ST0,ST5$"
+ TFCMOVNBE3 ST6
+ DB "ST0,ST6$"
+ TFCMOVNBE3 ST7
+ DB "ST0,ST7$"
+ DW 0
+;-------------------------------------------------------
+test_force_okay:
+ DB "force okay:$"
  SUB AX,AX
  INC AX
- JMP okay
-test_force_fail DB "force fail$"
+ RETN
+ DB "$"
+ DW 0
+;-------------------------------------------------------
+test_force_fail:
+ DB "force fail:$"
  SUB AX,AX
- JMP fail
+ RETN
+ DB "FAIL$"
+ DW 0
 ;-------------------------------------------------------
 ; BSS
-
-stdstack  DW 0
-pointer   DW 0
-jump      DW 0
-iloffset  DW 0
-ilsegment DW 0
+stdstack  DW ?
+pointer   DW ?
+pointer2  DW ?
+jump      DW ?
+iloffset  DW ?
+ilsegment DW ?
