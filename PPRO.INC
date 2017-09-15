@@ -34,6 +34,120 @@ MACRO TCMOVNB reg1,reg2
  RETN
 }
 ;-------------------------------------------------------
+MACRO TCMOVP reg1,reg2
+{
+ MOV    reg1,reg2
+ INC    reg1
+ TEST   AL,0
+ CMOVP  reg1,reg2
+ CMP    reg1,reg2
+ MOV    reg1,reg2
+ JNE    @F
+ INC    reg1
+ PUSH   AX
+ SUB    AX,AX
+ INC    AX
+ POP    AX
+ CMOVP  reg1,reg2
+@@:
+ CMP    reg1,reg2
+ RETN
+}
+;-------------------------------------------------------
+MACRO TCMOVNP reg1,reg2
+{
+ MOV    reg1,reg2
+ INC    reg1
+ PUSH   AX
+ SUB    AX,AX
+ INC    AX
+ POP    AX
+ CMOVNP reg1,reg2
+ CMP    reg1,reg2
+ MOV    reg1,reg2
+ JNE    @F
+ INC    reg1
+ TEST   AL,0
+ CMOVNP reg1,reg2
+@@:
+ CMP    reg1,reg2
+ RETN
+}
+;-------------------------------------------------------
+MACRO TCMOVO reg1,reg2
+{
+ MOV    reg1,reg2
+ INC    reg1
+ PUSH   AX
+ MOV    AL,127
+ ADD    AL,AL
+ POP    AX
+ CMOVO  reg1,reg2
+ CMP    reg1,reg2
+ MOV    reg1,reg2
+ JNE    @F
+ INC    reg1
+ TEST   AL,0
+ CMOVO  reg1,reg2
+@@:
+ CMP    reg1,reg2
+ RETN
+}
+;-------------------------------------------------------
+MACRO TCMOVNO reg1,reg2
+{
+ MOV    reg1,reg2
+ INC    reg1
+ TEST   AL,0
+ CMOVNO reg1,reg2
+ CMP    reg1,reg2
+ MOV    reg1,reg2
+ JNE    @F
+ INC    reg1
+ PUSH   AX
+ MOV    AL,127
+ ADD    AL,AL
+ POP    AX
+ CMOVNO reg1,reg2
+@@:
+ CMP    reg1,reg2
+ RETN
+}
+;-------------------------------------------------------
+MACRO TCMOVS reg1,reg2
+{
+ MOV    reg1,reg2
+ INC    reg1
+ TEST   SP,SP
+ CMOVS  reg1,reg2
+ CMP    reg1,reg2
+ MOV    reg1,reg2
+ JNE    @F
+ INC    reg1
+ TEST   AL,0
+ CMOVS  reg1,reg2
+@@:
+ CMP    reg1,reg2
+ RETN
+}
+;-------------------------------------------------------
+MACRO TCMOVNS reg1,reg2
+{
+ MOV    reg1,reg2
+ INC    reg1
+ TEST   AL,0
+ CMOVNS reg1,reg2
+ CMP    reg1,reg2
+ MOV    reg1,reg2
+ JNE    @F
+ INC    reg1
+ TEST   SP,SP
+ CMOVNS reg1,reg2
+@@:
+ CMP    reg1,reg2
+ RETN
+}
+;-------------------------------------------------------
 MACRO TCMOVZ reg1,reg2
 {
  MOV    reg1,reg2
@@ -72,7 +186,7 @@ MACRO TFCOMIA reg2
 {
  FLDL2T
  STC
- FCOMI  ST0,reg2
+ FCOMI  reg2
  FSTP   ST0
  SETA   AL
  TEST   AL,AL
@@ -83,7 +197,7 @@ MACRO TFCOMIB reg2
 {
  FLDZ
  CLC
- FCOMI  ST0,reg2
+ FCOMI  reg2
  FSTP   ST0
  SETB   AL
  TEST   AL,AL
@@ -95,7 +209,7 @@ MACRO TFCOMIE reg2
  FLDZ
  FADD   ST0,reg2
  TEST   SP,SP
- FCOMI  ST0,reg2
+ FCOMI  reg2
  FSTP   ST0
  SETE   AL
  TEST   AL,AL
@@ -106,7 +220,7 @@ MACRO TFCOMIPA reg2
 {
  FLDL2T
  STC
- FCOMIP ST0,reg2
+ FCOMIP reg2
  SETA   AL
  TEST   AL,AL
  RETN
@@ -116,7 +230,7 @@ MACRO TFCOMIPB reg2
 {
  FLDZ
  CLC
- FCOMIP ST0,reg2
+ FCOMIP reg2
  SETB   AL
  TEST   AL,AL
  RETN
@@ -127,7 +241,7 @@ MACRO TFCOMIPE reg2
  FLDZ
  FADD   ST0,reg2
  TEST   SP,SP
- FCOMIP ST0,reg2
+ FCOMIP reg2
  SETE   AL
  TEST   AL,AL
  RETN
@@ -137,7 +251,7 @@ MACRO TFUCOMIA reg2
 {
  FLDL2T
  STC
- FUCOMI ST0,reg2
+ FUCOMI reg2
  FSTP   ST0
  SETA   AL
  TEST   AL,AL
@@ -148,7 +262,7 @@ MACRO TFUCOMIB reg2
 {
  FLDZ
  CLC
- FUCOMI ST0,reg2
+ FUCOMI reg2
  FSTP   ST0
  SETB   AL
  TEST   AL,AL
@@ -160,7 +274,7 @@ MACRO TFUCOMIE reg2
  FLDZ
  FADD   ST0,reg2
  TEST   SP,SP
- FUCOMI ST0,reg2
+ FUCOMI reg2
  FSTP   ST0
  SETE   AL
  TEST   AL,AL
@@ -171,7 +285,7 @@ MACRO TFUCOMIPA reg2
 {
  FLDL2T
  STC
- FUCOMIP ST0,reg2
+ FUCOMIP reg2
  SETA   AL
  TEST   AL,AL
  RETN
@@ -181,7 +295,7 @@ MACRO TFUCOMIPB reg2
 {
  FLDZ
  CLC
- FUCOMIP ST0,reg2
+ FUCOMIP reg2
  SETB   AL
  TEST   AL,AL
  RETN
@@ -192,7 +306,7 @@ MACRO TFUCOMIPE reg2
  FLDZ
  FADD   ST0,reg2
  TEST   SP,SP
- FUCOMIP ST0,reg2
+ FUCOMIP reg2
  SETE   AL
  TEST   AL,AL
  RETN
