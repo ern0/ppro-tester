@@ -102,6 +102,12 @@ quit:
 
  FNINIT                 ; empty FPU stack
 
+ PUSH   CS
+ POP    DS
+ LEA    DX,[txt_crlf]
+ MOV    AH,9
+ INT    21H
+
  MOV    AX,4C00H        ; exit
  INT    21H
 ;-------------------------------------------------------
@@ -155,10 +161,11 @@ tab:
  DW     0
 
 txt_title: db "PentiumPro instruction set tester v1.0$"
-txt_pre: db 10,13,"chk $"
+txt_pre: db 10,13," check $"
 txt_wait: db " $"
 txt_fail: db "! $"
 txt_okay: db "/$"
+txt_crlf: db 10,13,'$'
 
 ;-------------------------------------------------------
 test_cmovb:
