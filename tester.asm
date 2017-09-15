@@ -101,8 +101,6 @@ quit:
  MOV    WORD [6 * 4 + 2],DI
 
  FNINIT                 ; empty FPU stack
- MOV    AH,0            ; wait for keypress
- INT    16H
 
  MOV    AX,4C00H        ; exit
  INT    21H
@@ -132,8 +130,6 @@ RETN
 ; Data
 
 tab:
- DW     test_force_okay
- DW     test_force_fail
  DW     test_cmovb
  DW     test_cmovnb
  DW     test_cmovz
@@ -159,7 +155,7 @@ tab:
  DW     0
 
 txt_title: db "PentiumPro instruction set tester v1.0$"
-txt_pre: db 10,13," testing $"
+txt_pre: db 10,13,"chk $"
 txt_wait: db " $"
 txt_fail: db "! $"
 txt_okay: db "/$"
@@ -2559,21 +2555,6 @@ test_fucomip:
  DB "ST7$"
  DW 0
 ;-------------------------------------------------------
-test_force_okay:
- DB "force okay:$"
- SUB AX,AX
- INC AX
- RETN
- DB "$"
- DW 0
-;-------------------------------------------------------
-test_force_fail:
- DB "force fail:$"
- SUB AX,AX
- RETN
- DB "FAIL$"
- DW 0
-;-------------------------------------------------------
 ; BSS
 stdstack  DW ?
 pointer   DW ?
@@ -2582,4 +2563,3 @@ jump      DW ?
 chars     DW ?
 iloffset  DW ?
 ilsegment DW ?
-
