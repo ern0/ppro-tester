@@ -11,8 +11,8 @@ org 100H
 	fldz
 	fldz
 	TEST	DX,DX
-	fcomi st1
-	je 		print
+	fcomi   st1
+	je 	print
 	lea 	dx,[fail]
 
 print:
@@ -26,5 +26,5 @@ print:
 
 
 hello 	db "FCOMI tester - $"
-okay 		db "okay",13,10,'$'
-fail		db "fail",13,10,'$'
+okay 	db "okay",13,10,'$'
+fail	db "fail",13,10,'$'
