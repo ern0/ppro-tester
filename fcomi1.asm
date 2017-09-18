@@ -1,6 +1,7 @@
 ; FASM source
 
 org 100H
+	FNINIT
 
 	lea 	dx,[hello]
 	mov 	ah,9
@@ -9,6 +10,7 @@ org 100H
 	lea 	dx,[okay]
 	fldz
 	fldz
+	TEST	DX,DX
 	fcomi st1
 	je 		print
 	lea 	dx,[fail]
@@ -16,6 +18,8 @@ org 100H
 print:
 	mov 	ah,9
 	int 	21H
+
+	FUCOMPP
 
 	mov 	ax,4c00H
 	int 	21H
