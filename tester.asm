@@ -160,7 +160,7 @@ tab:
  DW     test_fcmovnbe
  DW     0
 
-txt_title: db "PentiumPro instruction set tester v1.0$"
+txt_title: db "PentiumPro instruction set tester v1.01$"
 txt_pre: db 10,13," check $"
 txt_wait: db " $"
 txt_fail: db "! $"
@@ -184,6 +184,8 @@ test_cmovb:
  DB "AX,BP$"
  TCMOVB AX,SP
  DB "AX,SP$"
+ TCMOVB AX,[SI]
+ DB "AX,[SI]$"
  TCMOVB BX,AX
  DB "BX,AX$"
  TCMOVB BX,CX
